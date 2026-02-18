@@ -1,25 +1,20 @@
-# Petualangan Bahasa Arab (Game Interaktif)
+# Petualangan Bahasa Arab (Walkthrough Interaktif)
 
-Game ini adalah game interaktif berbasis web untuk belajar bahasa Arab (Bab 1-6) yang berfokus pada pemahaman Nahwu, Shorof, dan kosakata dasar.
+Game ini adalah game interaktif berbasis web bergaya *Visual Novel* untuk belajar bahasa Arab (Bab 1-6) yang berfokus pada pemahaman Nahwu, Shorof, dan kosakata dasar.
 
 ## Cara Bermain
 1.  Buka file `index.html` di browser Anda.
 2.  Klik tombol **Mulai Petualangan**.
-3.  Jawab pertanyaan dengan memilih opsi yang benar.
-4.  Kumpulkan XP untuk menaikkan Level Anda!
+3.  Ikuti narasi cerita dan penjelasan dari Ustadz.
+4.  Lakukan interaksi saat diminta (Klik kata Arab yang benar, atau pilih jawaban).
+5.  Kumpulkan XP untuk menaikkan Level Anda!
 
 ## Fitur
-*   **XP & Level System**: Setiap jawaban benar memberikan XP. Kumpulkan XP untuk naik level!
-*   **Progress Bar**: Lihat seberapa jauh Anda menyelesaikan level saat ini.
-*   **Penyimpanan Otomatis**: Progress Anda (XP dan Level) tersimpan di browser (LocalStorage).
-*   **Feedback Langsung**: Ketahui apakah jawaban Anda benar atau salah dengan penjelasan singkat.
-
-## Menambahkan Efek Suara
-Untuk pengalaman terbaik, silakan tambahkan file suara berikut ke dalam folder `sounds/`:
-*   `correct.mp3` - Suara jawaban benar
-*   `wrong.mp3` - Suara jawaban salah
-*   `click.mp3` - Suara klik tombol
-*   `win.mp3` - Suara selesai level / menang
+*   **Story Mode**: Penjelasan materi dibuat seperti dialog cerita yang mudah dipahami remaja.
+*   **Interaksi Langsung**: Klik langsung pada teks Arab untuk menjawab pertanyaan.
+*   **XP System**: Setiap bab yang selesai memberikan XP.
+*   **Penyimpanan Otomatis**: Progress Anda tersimpan di browser (LocalStorage).
+*   **Audio Feedback**: Efek suara untuk jawaban benar, salah, dan navigasi.
 
 ## Struktur Level
 1.  **Bab 1**: Nahwu & Shorof (Konsep Dasar)
@@ -28,5 +23,8 @@ Untuk pengalaman terbaik, silakan tambahkan file suara berikut ke dalam folder `
 4.  **Bab 4**: Dua Pola Kalimat (Ismiyyah & Fi'liyyah)
 5.  **Bab 5**: Tujuh Bab Penting (I'rab: Fa'il, Maf'ul, dll)
 6.  **Bab 6**: Mengenal 3K (Mabni: Dhomir, Isyarah, Maushul)
+
+## Instalasi
+Cukup clone repository ini dan buka `index.html` di modern browser (Chrome, Firefox, Edge, Safari).
 
 Selamat bermain dan belajar!

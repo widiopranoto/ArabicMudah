@@ -1,286 +1,345 @@
 // Game State
 let gameState = {
-    currentLevelIndex: 0,
-    currentQuestionIndex: 0,
+    currentChapterIndex: 0,
+    currentSceneIndex: 0,
     xp: 0,
-    playerLevel: 1, // RPG-style player level
-    completedLevels: [], // IDs of completed levels
-    score: 0
+    completedChapters: [],
+    waitingForInteraction: false,
+    currentInteraction: null
 };
 
-// DOM Elements
-const screens = {
-    start: document.getElementById('start-screen'),
-    game: document.getElementById('game-screen'),
-    levelComplete: document.getElementById('level-complete-screen'),
-    gameComplete: document.getElementById('game-complete-screen')
-};
-
-const ui = {
-    xpDisplay: document.getElementById('xp-display'),
-    levelDisplay: document.getElementById('level-display'),
-    progressBar: document.getElementById('progress-bar'),
-    questionText: document.getElementById('question-text'),
-    optionsContainer: document.getElementById('options-container'),
-    feedbackArea: document.getElementById('feedback-area'),
-    feedbackText: document.getElementById('feedback-text'),
-    nextBtn: document.getElementById('next-btn'),
-    levelXpGain: document.getElementById('level-xp-gain')
-};
-
+// Audio Elements
 const sounds = {
-    correct: document.getElementById('snd-correct'),
-    wrong: document.getElementById('snd-wrong'),
-    click: document.getElementById('snd-click'),
-    win: document.getElementById('snd-win')
+    start: document.getElementById('snd-start'),
+    on: document.getElementById('snd-on'),
+    chime: document.getElementById('snd-chime'),
+    alert: document.getElementById('snd-alert'),
+    end: document.getElementById('snd-end'),
+    boom: document.getElementById('snd-boom')
 };
 
-// Initialization
+// UI Elements
+const ui = {
+    screens: {
+        start: document.getElementById('start-screen'),
+        play: document.getElementById('play-screen'),
+        chapterComplete: document.getElementById('chapter-complete-screen'),
+        gameComplete: document.getElementById('game-complete-screen')
+    },
+    header: {
+        chapterTitle: document.getElementById('chapter-title'),
+        progressBar: document.getElementById('progress-bar'),
+        xpValue: document.getElementById('xp-value')
+    },
+    scene: {
+        display: document.getElementById('scene-display'),
+        arabicText: document.getElementById('arabic-text'),
+        visualContext: document.getElementById('visual-context')
+    },
+    narrative: {
+        box: document.querySelector('.narrative-box'),
+        speaker: document.getElementById('speaker-name'),
+        text: document.getElementById('narrative-text'),
+        interactionArea: document.getElementById('interaction-area'),
+        nextBtn: document.getElementById('btn-next'),
+        choicesContainer: document.getElementById('choices-container')
+    }
+};
+
+// --- Initialization ---
+
 document.addEventListener('DOMContentLoaded', () => {
     loadProgress();
-    updateStatsUI();
+    updateHeaderUI();
 
-    document.getElementById('start-btn').addEventListener('click', () => {
-        playSound('click');
+    // Event Listeners
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+        playSound('start');
         startGame();
     });
 
-    document.getElementById('reset-btn').addEventListener('click', () => {
-        playSound('click');
-        if(confirm('Apakah kamu yakin ingin menghapus semua progress?')) {
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        if(confirm("Hapus semua progress?")) {
             resetProgress();
         }
     });
 
-    ui.nextBtn.addEventListener('click', () => {
-        playSound('click');
-        nextQuestion();
+    ui.narrative.nextBtn.addEventListener('click', () => {
+        playSound('on');
+        nextScene();
     });
 
-    document.getElementById('next-level-btn').addEventListener('click', () => {
-        playSound('click');
-        startNextLevel();
+    document.getElementById('btn-next-chapter').addEventListener('click', () => {
+        playSound('start');
+        startNextChapter();
     });
 
-    document.getElementById('restart-game-btn').addEventListener('click', () => {
-        playSound('click');
+    document.getElementById('btn-restart').addEventListener('click', () => {
         resetGameSession();
+        playSound('start');
         showScreen('start');
     });
 });
 
-// Navigation Functions
-function showScreen(screenName) {
-    // Hide all screens
-    Object.values(screens).forEach(screen => {
-        screen.classList.remove('active');
-        screen.classList.add('hidden'); // Ensure hidden class is added
-        setTimeout(() => {
-             // giving a small delay for animation logic if needed,
-             // but for now just display:none via class
-        }, 0);
+// --- Navigation & Flow ---
+
+function showScreen(screenId) {
+    // Hide all
+    Object.values(ui.screens).forEach(s => {
+        s.classList.add('hidden');
+        s.classList.remove('active');
     });
-
-    // Show target screen
-    if (screens[screenName]) {
-        screens[screenName].classList.remove('hidden');
-        // Force reflow for animation
-        void screens[screenName].offsetWidth;
-        screens[screenName].classList.add('active');
+    // Show target
+    const target = document.getElementById(`${screenId}-screen`) || ui.screens[screenId];
+    if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active');
     }
 }
 
-// Game Logic
 function startGame() {
-    // Determine which level to start based on progress
-    // For simplicity, we just loop through levels 1-6
-    gameState.currentLevelIndex = 0;
+    // Find first incomplete chapter
+    let targetIdx = 0;
+    // For simplicity, find the first one that is NOT in completedChapters
+    const firstIncomplete = CHAPTERS.findIndex(c => !gameState.completedChapters.includes(c.id));
 
-    // Check if we can skip levels? (Optional, for now start from 0 or last saved?)
-    // Let's start from the first incomplete level found in order
-    const firstIncomplete = GAME_DATA.levels.findIndex(lvl => !gameState.completedLevels.includes(lvl.id));
     if (firstIncomplete !== -1) {
-        gameState.currentLevelIndex = firstIncomplete;
+        targetIdx = firstIncomplete;
     } else {
-        // All completed, maybe restart or just start at 0
-        gameState.currentLevelIndex = 0;
+        // All done, maybe reset to 0 or stay at last?
+        targetIdx = 0;
     }
 
-    startLevel(gameState.currentLevelIndex);
+    startChapter(targetIdx);
 }
 
-function startLevel(index) {
-    if (index >= GAME_DATA.levels.length) {
+function startChapter(idx) {
+    if (idx >= CHAPTERS.length) {
         showScreen('gameComplete');
-        playSound('win');
+        playSound('end');
         return;
     }
 
-    gameState.currentLevelIndex = index;
-    gameState.currentQuestionIndex = 0;
+    gameState.currentChapterIndex = idx;
+    gameState.currentSceneIndex = 0;
 
-    showScreen('game');
-    updateProgressBar();
-    showQuestion();
+    updateHeaderUI();
+    showScreen('play');
+    renderScene();
 }
 
-function showQuestion() {
-    const level = GAME_DATA.levels[gameState.currentLevelIndex];
-    const question = level.questions[gameState.currentQuestionIndex];
+function renderScene() {
+    const chapter = CHAPTERS[gameState.currentChapterIndex];
+    const scene = chapter.scenes[gameState.currentSceneIndex];
 
-    // Reset UI
-    ui.questionText.textContent = question.question;
-    ui.optionsContainer.innerHTML = '';
-    ui.feedbackArea.classList.add('hidden');
-    ui.feedbackArea.classList.remove('correct', 'wrong');
-    ui.nextBtn.classList.add('hidden');
+    // Update Progress
+    const progress = ((gameState.currentSceneIndex) / chapter.scenes.length) * 100;
+    ui.header.progressBar.style.width = `${progress}%`;
 
-    // Create Options
-    question.options.forEach(opt => {
+    // 1. Render Narrative
+    ui.narrative.text.textContent = scene.text;
+    ui.narrative.speaker.textContent = scene.speaker || "Narator";
+
+    // 2. Render Arabic Text (Visuals)
+    ui.scene.arabicText.innerHTML = ''; // Clear previous
+    ui.narrative.choicesContainer.innerHTML = ''; // Clear choices
+    ui.narrative.choicesContainer.classList.add('hidden');
+
+    if (scene.arabic) {
+        // Render words
+        const words = scene.arabic.split(' ');
+        words.forEach((word, index) => {
+            const span = document.createElement('span');
+            span.textContent = word + ' '; // Add space for readability
+            span.classList.add('arabic-word');
+            span.dataset.word = word.trim();
+            span.dataset.index = index;
+
+            // Interaction: Click Word
+            if (scene.interaction === 'click-word') {
+                span.classList.add('clickable');
+                span.addEventListener('click', () => handleWordClick(word.trim(), span, scene));
+            }
+
+            ui.scene.arabicText.appendChild(span);
+        });
+    }
+
+    // 3. Handle Interaction State
+    gameState.waitingForInteraction = false;
+    ui.narrative.nextBtn.classList.remove('hidden'); // Default show next
+
+    if (scene.interaction) {
+        gameState.waitingForInteraction = true;
+        ui.narrative.nextBtn.classList.add('hidden'); // Hide Next button until interaction done
+
+        if (scene.interaction === 'choice') {
+            renderChoices(scene);
+        }
+    }
+
+    // Update Button Text for non-interactive or post-interaction
+    if (!scene.interaction) {
+        ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === chapter.scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
+    }
+}
+
+
+// --- Interaction Handlers ---
+
+function handleWordClick(word, element, scene) {
+    if (!gameState.waitingForInteraction) return;
+
+    // Loose matching for Arabic (sometimes spaces or tashkeel vary)
+    // We check if the clicked word *contains* the target sequence or vice versa
+    // This handles cases where target is "Muhammad" but word is "Muhammadun" (if split incorrectly)
+    // But since we split by space, usually it matches.
+    const isCorrect = word.includes(scene.target) || scene.target.includes(word);
+
+    if (isCorrect) {
+        element.classList.add('correct');
+        playSound('chime');
+        finishInteraction(scene.feedback);
+    } else {
+        element.classList.add('wrong');
+        playSound('alert');
+        setTimeout(() => element.classList.remove('wrong'), 500);
+    }
+}
+
+function renderChoices(scene) {
+    ui.narrative.choicesContainer.classList.remove('hidden');
+
+    scene.choices.forEach(choiceText => {
         const btn = document.createElement('button');
-        btn.classList.add('option-btn');
-        btn.textContent = opt;
-        btn.addEventListener('click', () => checkAnswer(opt, btn));
-        ui.optionsContainer.appendChild(btn);
+        btn.textContent = choiceText;
+        btn.classList.add('choice-btn');
+        btn.addEventListener('click', () => {
+            if (!gameState.waitingForInteraction) return;
+
+            if (choiceText === scene.correctChoice) {
+                // Correct
+                btn.style.backgroundColor = '#55efc4'; // Green
+                btn.style.color = '#fff';
+                playSound('chime');
+                finishInteraction(scene.feedback);
+            } else {
+                // Wrong
+                btn.style.backgroundColor = '#ff7675'; // Red
+                btn.style.color = '#fff';
+                playSound('alert');
+            }
+        });
+        ui.narrative.choicesContainer.appendChild(btn);
     });
 }
 
-function checkAnswer(selectedOption, btnElement) {
-    // Prevent multiple clicks
-    const allBtns = ui.optionsContainer.querySelectorAll('.option-btn');
-    allBtns.forEach(b => b.disabled = true);
+function finishInteraction(feedbackText) {
+    gameState.waitingForInteraction = false;
 
-    const level = GAME_DATA.levels[gameState.currentLevelIndex];
-    const question = level.questions[gameState.currentQuestionIndex];
-    const isCorrect = selectedOption === question.answer;
-
-    if (isCorrect) {
-        btnElement.classList.add('correct');
-        ui.feedbackText.textContent = "Benar! Bagus sekali.";
-        ui.feedbackArea.classList.add('correct');
-        playSound('correct');
-        addXP(10); // Base XP per question
-    } else {
-        btnElement.classList.add('wrong');
-        // Highlight correct answer
-        allBtns.forEach(b => {
-            if (b.textContent === question.answer) b.classList.add('correct');
-        });
-        ui.feedbackText.textContent = `Salah. Jawaban yang benar adalah: ${question.answer}`;
-        ui.feedbackArea.classList.add('wrong');
-        playSound('wrong');
+    // Update text to show feedback
+    if (feedbackText) {
+        ui.narrative.text.textContent = feedbackText;
+        ui.narrative.speaker.textContent = "Ustadz";
     }
 
-    ui.feedbackArea.classList.remove('hidden');
-    ui.nextBtn.classList.remove('hidden');
+    // Show Next Button
+    ui.narrative.nextBtn.classList.remove('hidden');
+    ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === CHAPTERS[gameState.currentChapterIndex].scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
+
+    // Disable visuals
+    const words = document.querySelectorAll('.arabic-word');
+    words.forEach(w => {
+        w.classList.remove('clickable');
+        // Remove click listeners by cloning? Or just rely on waitingForInteraction flag.
+        // The flag handles logic, CSS handles cursor.
+    });
+
+    // Disable choice buttons
+    const choiceBtns = document.querySelectorAll('.choice-btn');
+    choiceBtns.forEach(b => b.disabled = true);
 }
 
-function nextQuestion() {
-    const level = GAME_DATA.levels[gameState.currentLevelIndex];
-    gameState.currentQuestionIndex++;
+function nextScene() {
+    const chapter = CHAPTERS[gameState.currentChapterIndex];
 
-    updateProgressBar();
-
-    if (gameState.currentQuestionIndex < level.questions.length) {
-        showQuestion();
+    if (gameState.currentSceneIndex < chapter.scenes.length - 1) {
+        gameState.currentSceneIndex++;
+        renderScene();
     } else {
-        finishLevel();
+        completeChapter();
     }
 }
 
-function updateProgressBar() {
-    const level = GAME_DATA.levels[gameState.currentLevelIndex];
-    const progress = ((gameState.currentQuestionIndex) / level.questions.length) * 100;
-    ui.progressBar.style.width = `${progress}%`;
-}
+function completeChapter() {
+    const chapter = CHAPTERS[gameState.currentChapterIndex];
 
-function finishLevel() {
-    const level = GAME_DATA.levels[gameState.currentLevelIndex];
-
-    // Add Bonus XP for level completion
-    const bonusXP = level.xpReward;
-    addXP(bonusXP);
-
-    // Mark as completed
-    if (!gameState.completedLevels.includes(level.id)) {
-        gameState.completedLevels.push(level.id);
+    if (!gameState.completedChapters.includes(chapter.id)) {
+        gameState.completedChapters.push(chapter.id);
+        addXP(chapter.xpReward);
     }
 
     saveProgress();
 
-    ui.levelXpGain.textContent = `+${bonusXP} XP`;
-    playSound('win');
-    showScreen('levelComplete');
+    document.getElementById('chapter-xp').textContent = chapter.xpReward;
+    showScreen('chapterComplete');
+    playSound('end');
 }
 
-function startNextLevel() {
-    startLevel(gameState.currentLevelIndex + 1);
+function startNextChapter() {
+    startChapter(gameState.currentChapterIndex + 1);
 }
 
-function resetGameSession() {
-    gameState.currentLevelIndex = 0;
-    gameState.currentQuestionIndex = 0;
-}
+// --- Data Persistence ---
 
-// Stats & Persistence
 function addXP(amount) {
     gameState.xp += amount;
-
-    // Simple leveling system: Level up every 500 XP
-    const newLevel = Math.floor(gameState.xp / 500) + 1;
-    if (newLevel > gameState.playerLevel) {
-        gameState.playerLevel = newLevel;
-        // Could play a level up sound here
-        alert(`Level Up! Kamu sekarang level ${newLevel}!`);
-    }
-
-    updateStatsUI();
-    saveProgress();
+    updateHeaderUI();
 }
 
-function updateStatsUI() {
-    ui.xpDisplay.textContent = gameState.xp;
-    ui.levelDisplay.textContent = gameState.playerLevel;
+function updateHeaderUI() {
+    const xpEl = document.getElementById('xp-value');
+    if (xpEl) xpEl.textContent = gameState.xp;
+
+    const chapter = CHAPTERS[gameState.currentChapterIndex];
+    const titleEl = document.getElementById('chapter-title');
+    if (titleEl && chapter) {
+        titleEl.textContent = chapter.title;
+    }
 }
 
 function saveProgress() {
     const data = {
         xp: gameState.xp,
-        playerLevel: gameState.playerLevel,
-        completedLevels: gameState.completedLevels
+        completedChapters: gameState.completedChapters
     };
-    localStorage.setItem('arabGameProgress', JSON.stringify(data));
+    localStorage.setItem('arabWalkthroughProgress', JSON.stringify(data));
 }
 
 function loadProgress() {
-    const saved = localStorage.getItem('arabGameProgress');
+    const saved = localStorage.getItem('arabWalkthroughProgress');
     if (saved) {
         const data = JSON.parse(saved);
         gameState.xp = data.xp || 0;
-        gameState.playerLevel = data.playerLevel || 1;
-        gameState.completedLevels = data.completedLevels || [];
+        gameState.completedChapters = data.completedChapters || [];
     }
 }
 
 function resetProgress() {
-    localStorage.removeItem('arabGameProgress');
+    localStorage.removeItem('arabWalkthroughProgress');
     gameState.xp = 0;
-    gameState.playerLevel = 1;
-    gameState.completedLevels = [];
-    updateStatsUI();
+    gameState.completedChapters = [];
     location.reload();
 }
 
-// Audio Helper
+function resetGameSession() {
+    gameState.currentChapterIndex = 0;
+    gameState.currentSceneIndex = 0;
+}
+
 function playSound(name) {
-    const audio = sounds[name];
-    if (audio) {
-        audio.currentTime = 0;
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.log("Audio play failed (interaction needed or file missing):", error);
-            });
-        }
+    if (sounds[name]) {
+        sounds[name].currentTime = 0;
+        sounds[name].play().catch(e => console.log("Audio play prevented:", e));
     }
 }
