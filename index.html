@@ -9,83 +9,100 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Latin Font (Poppins) -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Arabic Font (Mada - clean, sans-serif like) -->
     <link href="https://fonts.googleapis.com/css2?family=Mada:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="game-container">
 
-        <!-- Header: Progress & Title -->
+        <!-- Header -->
         <header id="game-header">
-            <div class="header-content">
+            <div class="header-left">
+                <span id="player-info" class="player-tag">Pemain</span>
+            </div>
+            <div class="header-center">
                 <span id="chapter-title">Bab 1: Nahwu & Shorof</span>
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
                 </div>
             </div>
-            <div class="xp-display">XP: <span id="xp-value">0</span></div>
+            <div class="header-right">
+                <div class="stat-badge">Lvl <span id="level-value">1</span></div>
+                <div class="stat-badge xp">XP <span id="xp-value">0</span></div>
+            </div>
         </header>
 
         <!-- Main Game Area -->
         <main id="game-stage">
 
-            <!-- Start Screen -->
-            <div id="start-screen" class="screen active">
-                <div class="hero-content">
-                    <h1>Petualangan Bahasa Arab</h1>
-                    <p class="subtitle">Belajar Nahwu & Shorof dengan Cara Baru!</p>
-                    <button id="btn-start-game" class="btn-primary">Mulai Petualangan</button>
-                    <button id="btn-reset" class="btn-secondary small">Reset Progress</button>
+            <!-- Login Screen -->
+            <div id="login-screen" class="screen active">
+                <div class="login-card">
+                    <h1>Ahlan wa Sahlan!</h1>
+                    <p>Masukkan nama kamu untuk memulai petualangan.</p>
+                    <form id="login-form">
+                        <input type="text" id="username-input" placeholder="Nama Panggilan" required autocomplete="off" maxlength="12">
+                        <button type="submit" id="btn-login" class="btn-primary full-width">Masuk</button>
+                    </form>
                 </div>
             </div>
 
-            <!-- Story/Play Screen -->
-            <div id="play-screen" class="screen hidden">
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen hidden">
+                <div class="hero-content">
+                    <h1 class="game-title">Petualangan Bahasa Arab</h1>
+                    <p id="welcome-message" class="subtitle">Belajar Nahwu & Shorof dengan Cara Baru!</p>
 
-                <!-- The "Scene" area where Arabic text or Visuals appear -->
-                <div id="scene-display" class="scene-card">
-                    <div id="arabic-text" class="arabic-content">
-                        <!-- Arabic words will be injected here as spans -->
-                    </div>
-                    <div id="visual-context" class="visual-context hidden">
-                        <!-- Additional context or images if needed -->
+                    <div class="menu-buttons">
+                        <button id="btn-start-game" class="btn-primary big">Mulai Petualangan</button>
+                        <button id="btn-reset" class="btn-secondary">Reset Progress</button>
+                        <button id="btn-logout" class="btn-text">Ganti Pemain</button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Narrative / Dialogue Area -->
+            <!-- Play Screen -->
+            <div id="play-screen" class="screen hidden">
+
+                <div id="scene-display" class="scene-card">
+                    <div id="arabic-text" class="arabic-content">
+                        <!-- Arabic words injected here -->
+                    </div>
+                    <div id="visual-context" class="visual-context hidden"></div>
+                </div>
+
                 <div class="narrative-box">
                     <div id="speaker-name" class="speaker-label">Narator</div>
                     <p id="narrative-text">Selamat datang di dunia Bahasa Arab...</p>
 
-                    <!-- Interaction Area (Buttons, Choices) -->
                     <div id="interaction-area" class="interaction-controls">
                         <button id="btn-next" class="btn-action">Lanjut &rarr;</button>
-                        <div id="choices-container" class="choices-grid hidden">
-                            <!-- Choice buttons injected here -->
-                        </div>
+                        <div id="choices-container" class="choices-grid hidden"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Chapter Complete Screen -->
             <div id="chapter-complete-screen" class="screen hidden">
-                <h2>Bab Selesai! 🎉</h2>
-                <p>Kamu telah menyelesaikan bab ini.</p>
-                <div class="xp-reward">
-                    <span>+<span id="chapter-xp">100</span> XP</span>
+                <div class="celebration-card">
+                    <h2>Bab Selesai! 🎉</h2>
+                    <p>Kamu hebat! Bab ini telah kamu kuasai.</p>
+                    <div class="xp-reward">
+                        <span>+<span id="chapter-xp">100</span> XP</span>
+                    </div>
+                    <button id="btn-next-chapter" class="btn-primary">Lanjut ke Bab Berikutnya</button>
                 </div>
-                <button id="btn-next-chapter" class="btn-primary">Lanjut ke Bab Berikutnya</button>
             </div>
 
             <!-- Game End Screen -->
             <div id="game-complete-screen" class="screen hidden">
-                <h2>Luar Biasa! 🏆</h2>
-                <p>Kamu telah menamatkan semua bab (1-6).</p>
-                <p>Teruslah berlatih dan membaca Al-Quran.</p>
-                <button id="btn-restart" class="btn-primary">Main Lagi</button>
+                <div class="celebration-card">
+                    <h2>Luar Biasa! 🏆</h2>
+                    <p>Kamu telah menamatkan semua bab (1-6).</p>
+                    <p>Teruslah berlatih dan membaca Al-Quran.</p>
+                    <button id="btn-restart" class="btn-primary">Main Lagi</button>
+                </div>
             </div>
 
         </main>

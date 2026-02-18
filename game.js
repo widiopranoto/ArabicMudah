@@ -1,8 +1,10 @@
 // Game State
 let gameState = {
+    username: "",
     currentChapterIndex: 0,
     currentSceneIndex: 0,
     xp: 0,
+    level: 1,
     completedChapters: [],
     waitingForInteraction: false,
     currentInteraction: null
@@ -21,15 +23,18 @@ const sounds = {
 // UI Elements
 const ui = {
     screens: {
+        login: document.getElementById('login-screen'),
         start: document.getElementById('start-screen'),
         play: document.getElementById('play-screen'),
         chapterComplete: document.getElementById('chapter-complete-screen'),
         gameComplete: document.getElementById('game-complete-screen')
     },
     header: {
+        playerInfo: document.getElementById('player-info'),
         chapterTitle: document.getElementById('chapter-title'),
         progressBar: document.getElementById('progress-bar'),
-        xpValue: document.getElementById('xp-value')
+        xpValue: document.getElementById('xp-value'),
+        levelValue: document.getElementById('level-value')
     },
     scene: {
         display: document.getElementById('scene-display'),
@@ -43,27 +48,50 @@ const ui = {
         interactionArea: document.getElementById('interaction-area'),
         nextBtn: document.getElementById('btn-next'),
         choicesContainer: document.getElementById('choices-container')
+    },
+    login: {
+        form: document.getElementById('login-form'),
+        input: document.getElementById('username-input'),
+        btn: document.getElementById('btn-login')
     }
 };
 
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadProgress();
-    updateHeaderUI();
+    // Show login screen first
+    showScreen('login');
 
-    // Event Listeners
+    // Login Event
+    ui.login.form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = ui.login.input.value.trim();
+        if (name) {
+            playSound('on');
+            loginUser(name);
+        }
+    });
+
+    // Start Game Event
     document.getElementById('btn-start-game').addEventListener('click', () => {
         playSound('start');
         startGame();
     });
 
+    // Reset Event
     document.getElementById('btn-reset').addEventListener('click', () => {
-        if(confirm("Hapus semua progress?")) {
+        if(confirm("Hapus progress untuk user ini?")) {
             resetProgress();
         }
     });
 
+    // Logout Event
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        playSound('on');
+        logoutUser();
+    });
+
+    // Navigation Events
     ui.narrative.nextBtn.addEventListener('click', () => {
         playSound('on');
         nextScene();
@@ -81,16 +109,82 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// --- User Management ---
+
+function loginUser(username) {
+    gameState.username = username;
+    loadProgress(username);
+    updateHeaderUI();
+    showScreen('start');
+
+    // Welcome message
+    const welcomeMsg = document.getElementById('welcome-message');
+    if (welcomeMsg) {
+        welcomeMsg.textContent = `Ahlan, ${username}! Siap melanjutkan petualangan?`;
+    }
+}
+
+function logoutUser() {
+    gameState.username = "";
+    ui.login.input.value = "";
+    showScreen('login');
+}
+
+function saveProgress() {
+    if (!gameState.username) return;
+
+    // Load all users
+    let allUsers = JSON.parse(localStorage.getItem('arabGameUsers') || '{}');
+
+    // Update current user
+    allUsers[gameState.username] = {
+        xp: gameState.xp,
+        level: gameState.level,
+        completedChapters: gameState.completedChapters
+    };
+
+    localStorage.setItem('arabGameUsers', JSON.stringify(allUsers));
+}
+
+function loadProgress(username) {
+    let allUsers = JSON.parse(localStorage.getItem('arabGameUsers') || '{}');
+    const userData = allUsers[username];
+
+    if (userData) {
+        gameState.xp = userData.xp || 0;
+        gameState.level = userData.level || 1;
+        gameState.completedChapters = userData.completedChapters || [];
+    } else {
+        // New user defaults
+        gameState.xp = 0;
+        gameState.level = 1;
+        gameState.completedChapters = [];
+    }
+}
+
+function resetProgress() {
+    if (!gameState.username) return;
+
+    gameState.xp = 0;
+    gameState.level = 1;
+    gameState.completedChapters = [];
+    saveProgress();
+    updateHeaderUI();
+    alert("Progress berhasil direset.");
+}
+
 // --- Navigation & Flow ---
 
 function showScreen(screenId) {
     // Hide all
     Object.values(ui.screens).forEach(s => {
-        s.classList.add('hidden');
-        s.classList.remove('active');
+        if(s) {
+            s.classList.add('hidden');
+            s.classList.remove('active');
+        }
     });
     // Show target
-    const target = document.getElementById(`${screenId}-screen`) || ui.screens[screenId];
+    const target = ui.screens[screenId];
     if (target) {
         target.classList.remove('hidden');
         target.classList.add('active');
@@ -100,14 +194,12 @@ function showScreen(screenId) {
 function startGame() {
     // Find first incomplete chapter
     let targetIdx = 0;
-    // For simplicity, find the first one that is NOT in completedChapters
     const firstIncomplete = CHAPTERS.findIndex(c => !gameState.completedChapters.includes(c.id));
 
     if (firstIncomplete !== -1) {
         targetIdx = firstIncomplete;
     } else {
-        // All done, maybe reset to 0 or stay at last?
-        targetIdx = 0;
+        targetIdx = 0; // Replay if all done
     }
 
     startChapter(targetIdx);
@@ -141,21 +233,18 @@ function renderScene() {
     ui.narrative.speaker.textContent = scene.speaker || "Narator";
 
     // 2. Render Arabic Text (Visuals)
-    ui.scene.arabicText.innerHTML = ''; // Clear previous
-    ui.narrative.choicesContainer.innerHTML = ''; // Clear choices
+    ui.scene.arabicText.innerHTML = '';
+    ui.narrative.choicesContainer.innerHTML = '';
     ui.narrative.choicesContainer.classList.add('hidden');
 
     if (scene.arabic) {
-        // Render words
         const words = scene.arabic.split(' ');
         words.forEach((word, index) => {
             const span = document.createElement('span');
-            span.textContent = word + ' '; // Add space for readability
+            span.textContent = word + ' ';
             span.classList.add('arabic-word');
             span.dataset.word = word.trim();
-            span.dataset.index = index;
 
-            // Interaction: Click Word
             if (scene.interaction === 'click-word') {
                 span.classList.add('clickable');
                 span.addEventListener('click', () => handleWordClick(word.trim(), span, scene));
@@ -167,33 +256,28 @@ function renderScene() {
 
     // 3. Handle Interaction State
     gameState.waitingForInteraction = false;
-    ui.narrative.nextBtn.classList.remove('hidden'); // Default show next
+    ui.narrative.nextBtn.classList.remove('hidden');
 
     if (scene.interaction) {
         gameState.waitingForInteraction = true;
-        ui.narrative.nextBtn.classList.add('hidden'); // Hide Next button until interaction done
+        ui.narrative.nextBtn.classList.add('hidden');
 
         if (scene.interaction === 'choice') {
             renderChoices(scene);
         }
     }
 
-    // Update Button Text for non-interactive or post-interaction
     if (!scene.interaction) {
         ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === chapter.scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
     }
 }
-
 
 // --- Interaction Handlers ---
 
 function handleWordClick(word, element, scene) {
     if (!gameState.waitingForInteraction) return;
 
-    // Loose matching for Arabic (sometimes spaces or tashkeel vary)
-    // We check if the clicked word *contains* the target sequence or vice versa
-    // This handles cases where target is "Muhammad" but word is "Muhammadun" (if split incorrectly)
-    // But since we split by space, usually it matches.
+    // Check match (relaxed)
     const isCorrect = word.includes(scene.target) || scene.target.includes(word);
 
     if (isCorrect) {
@@ -218,14 +302,12 @@ function renderChoices(scene) {
             if (!gameState.waitingForInteraction) return;
 
             if (choiceText === scene.correctChoice) {
-                // Correct
-                btn.style.backgroundColor = '#55efc4'; // Green
+                btn.style.backgroundColor = '#55efc4';
                 btn.style.color = '#fff';
                 playSound('chime');
                 finishInteraction(scene.feedback);
             } else {
-                // Wrong
-                btn.style.backgroundColor = '#ff7675'; // Red
+                btn.style.backgroundColor = '#ff7675';
                 btn.style.color = '#fff';
                 playSound('alert');
             }
@@ -237,25 +319,17 @@ function renderChoices(scene) {
 function finishInteraction(feedbackText) {
     gameState.waitingForInteraction = false;
 
-    // Update text to show feedback
     if (feedbackText) {
         ui.narrative.text.textContent = feedbackText;
         ui.narrative.speaker.textContent = "Ustadz";
     }
 
-    // Show Next Button
     ui.narrative.nextBtn.classList.remove('hidden');
     ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === CHAPTERS[gameState.currentChapterIndex].scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
 
-    // Disable visuals
     const words = document.querySelectorAll('.arabic-word');
-    words.forEach(w => {
-        w.classList.remove('clickable');
-        // Remove click listeners by cloning? Or just rely on waitingForInteraction flag.
-        // The flag handles logic, CSS handles cursor.
-    });
+    words.forEach(w => w.classList.remove('clickable'));
 
-    // Disable choice buttons
     const choiceBtns = document.querySelectorAll('.choice-btn');
     choiceBtns.forEach(b => b.disabled = true);
 }
@@ -290,51 +364,39 @@ function startNextChapter() {
     startChapter(gameState.currentChapterIndex + 1);
 }
 
-// --- Data Persistence ---
+function resetGameSession() {
+    gameState.currentChapterIndex = 0;
+    gameState.currentSceneIndex = 0;
+}
+
+// --- XP & Leveling ---
 
 function addXP(amount) {
     gameState.xp += amount;
+
+    // Level up every 1000 XP
+    const newLevel = Math.floor(gameState.xp / 1000) + 1;
+    if (newLevel > gameState.level) {
+        gameState.level = newLevel;
+        alert(`Selamat! Kamu naik ke Level ${newLevel}!`);
+        playSound('chime');
+    }
+
     updateHeaderUI();
 }
 
 function updateHeaderUI() {
-    const xpEl = document.getElementById('xp-value');
-    if (xpEl) xpEl.textContent = gameState.xp;
+    if (ui.header.xpValue) ui.header.xpValue.textContent = gameState.xp;
+    if (ui.header.levelValue) ui.header.levelValue.textContent = gameState.level;
+
+    if (gameState.username) {
+        ui.header.playerInfo.textContent = `${gameState.username} (Lvl ${gameState.level})`;
+    }
 
     const chapter = CHAPTERS[gameState.currentChapterIndex];
-    const titleEl = document.getElementById('chapter-title');
-    if (titleEl && chapter) {
-        titleEl.textContent = chapter.title;
+    if (ui.header.chapterTitle && chapter) {
+        ui.header.chapterTitle.textContent = chapter.title;
     }
-}
-
-function saveProgress() {
-    const data = {
-        xp: gameState.xp,
-        completedChapters: gameState.completedChapters
-    };
-    localStorage.setItem('arabWalkthroughProgress', JSON.stringify(data));
-}
-
-function loadProgress() {
-    const saved = localStorage.getItem('arabWalkthroughProgress');
-    if (saved) {
-        const data = JSON.parse(saved);
-        gameState.xp = data.xp || 0;
-        gameState.completedChapters = data.completedChapters || [];
-    }
-}
-
-function resetProgress() {
-    localStorage.removeItem('arabWalkthroughProgress');
-    gameState.xp = 0;
-    gameState.completedChapters = [];
-    location.reload();
-}
-
-function resetGameSession() {
-    gameState.currentChapterIndex = 0;
-    gameState.currentSceneIndex = 0;
 }
 
 function playSound(name) {
