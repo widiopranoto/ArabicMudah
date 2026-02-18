@@ -286,11 +286,11 @@ function handleWordClick(word, element, scene) {
 
     if (isCorrect) {
         element.classList.add('correct');
-        playSound('chime');
+        try { playSound('chime'); } catch (e) { console.warn(e); }
         finishInteraction(scene.feedback);
     } else {
         element.classList.add('wrong');
-        playSound('alert');
+        try { playSound('alert'); } catch (e) { console.warn(e); }
         setTimeout(() => element.classList.remove('wrong'), 500);
     }
 }
@@ -308,12 +308,12 @@ function renderChoices(scene) {
             if (choiceText === scene.correctChoice) {
                 btn.style.backgroundColor = '#55efc4';
                 btn.style.color = '#fff';
-                playSound('chime');
+                try { playSound('chime'); } catch (e) { console.warn(e); }
                 finishInteraction(scene.feedback);
             } else {
                 btn.style.backgroundColor = '#ff7675';
                 btn.style.color = '#fff';
-                playSound('alert');
+                try { playSound('alert'); } catch (e) { console.warn(e); }
             }
         });
         ui.narrative.choicesContainer.appendChild(btn);
