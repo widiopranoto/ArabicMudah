@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Bahasa Arab</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Latin Font (Poppins) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Arabic Font (Mada - clean, sans-serif like) -->
+    <link href="https://fonts.googleapis.com/css2?family=Mada:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <!-- Header: Progress & Title -->
+        <header id="game-header">
+            <div class="header-content">
+                <span id="chapter-title">Bab 1: Nahwu & Shorof</span>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+            </div>
+            <div class="xp-display">XP: <span id="xp-value">0</span></div>
+        </header>
+
+        <!-- Main Game Area -->
+        <main id="game-stage">
+            
+            <!-- Start Screen -->
+            <div id="start-screen" class="screen active">
+                <div class="hero-content">
+                    <h1>Petualangan Bahasa Arab</h1>
+                    <p class="subtitle">Belajar Nahwu & Shorof dengan Cara Baru!</p>
+                    <button id="btn-start-game" class="btn-primary">Mulai Petualangan</button>
+                    <button id="btn-reset" class="btn-secondary small">Reset Progress</button>
+                </div>
+            </div>
+
+            <!-- Story/Play Screen -->
+            <div id="play-screen" class="screen hidden">
+                
+                <!-- The "Scene" area where Arabic text or Visuals appear -->
+                <div id="scene-display" class="scene-card">
+                    <div id="arabic-text" class="arabic-content">
+                        <!-- Arabic words will be injected here as spans -->
+                    </div>
+                    <div id="visual-context" class="visual-context hidden">
+                        <!-- Additional context or images if needed -->
+                    </div>
+                </div>
+
+                <!-- Narrative / Dialogue Area -->
+                <div class="narrative-box">
+                    <div id="speaker-name" class="speaker-label">Narator</div>
+                    <p id="narrative-text">Selamat datang di dunia Bahasa Arab...</p>
+                    
+                    <!-- Interaction Area (Buttons, Choices) -->
+                    <div id="interaction-area" class="interaction-controls">
+                        <button id="btn-next" class="btn-action">Lanjut &rarr;</button>
+                        <div id="choices-container" class="choices-grid hidden">
+                            <!-- Choice buttons injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter Complete Screen -->
+            <div id="chapter-complete-screen" class="screen hidden">
+                <h2>Bab Selesai! 🎉</h2>
+                <p>Kamu telah menyelesaikan bab ini.</p>
+                <div class="xp-reward">
+                    <span>+<span id="chapter-xp">100</span> XP</span>
+                </div>
+                <button id="btn-next-chapter" class="btn-primary">Lanjut ke Bab Berikutnya</button>
+            </div>
+
+            <!-- Game End Screen -->
+            <div id="game-complete-screen" class="screen hidden">
+                <h2>Luar Biasa! 🏆</h2>
+                <p>Kamu telah menamatkan semua bab (1-6).</p>
+                <p>Teruslah berlatih dan membaca Al-Quran.</p>
+                <button id="btn-restart" class="btn-primary">Main Lagi</button>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="snd-start" src="sounds/start.wav"></audio>
+    <audio id="snd-on" src="sounds/on.wav"></audio>
+    <audio id="snd-chime" src="sounds/chime.wav"></audio>
+    <audio id="snd-alert" src="sounds/alert.wav"></audio>
+    <audio id="snd-end" src="sounds/end.wav"></audio>
+    <audio id="snd-boom" src="sounds/boom.wav"></audio>
+
+    <script src="chapters.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
