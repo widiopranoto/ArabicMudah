@@ -67,7 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const name = ui.login.input.value.trim();
         if (name) {
-            playSound('on');
+            try {
+                playSound('on');
+            } catch (err) {
+                console.warn("Audio play failed, continuing login...", err);
+            }
             loginUser(name);
         }
     });
@@ -401,7 +405,16 @@ function updateHeaderUI() {
 
 function playSound(name) {
     if (sounds[name]) {
-        sounds[name].currentTime = 0;
-        sounds[name].play().catch(e => console.log("Audio play prevented:", e));
+        try {
+            sounds[name].currentTime = 0;
+            const playPromise = sounds[name].play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    console.warn(`Audio '${name}' play prevented (likely autoplay policy):`, e);
+                });
+            }
+        } catch (e) {
+            console.error("Audio error:", e);
+        }
     }
 }
