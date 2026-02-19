@@ -249,6 +249,8 @@ function showScreen(screenId) {
     if (target) {
         target.classList.remove('hidden');
         target.classList.add('active');
+    } else {
+        console.warn(`Screen '${screenId}' not found. Check HTML structure.`);
     }
 }
 
@@ -257,7 +259,12 @@ function showLevelSelect() {
 
     // Generate Level Cards
     const container = document.getElementById('level-grid');
-    if (!container) return; // Should exist in new HTML
+    if (!container) {
+        console.warn("Level Select container missing. Falling back to Chapter 1.");
+        // Fallback for missing Level Select screen (e.g. old HTML)
+        startChapter(0);
+        return;
+    }
 
     container.innerHTML = '';
 
