@@ -12,7 +12,7 @@ let gameState = {
 };
 
 // Cloud Configuration
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX/exec"; // Placeholder
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUZtc0eT5iAzUfA-Bs7rSM0Z782xC_F1MVYur-wmoyjXZDtwmy4Bmrdbi2Xn1QwdAOhw/exec"; // Placeholder
 
 // Audio Elements
 const sounds = {
