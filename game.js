@@ -7,8 +7,12 @@ let gameState = {
     level: 1,
     completedChapters: [],
     waitingForInteraction: false,
-    currentInteraction: null
+    currentInteraction: null,
+    totalScore: 0 // New field
 };
+
+// Cloud Configuration
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX/exec"; // Placeholder
 
 // Audio Elements
 const sounds = {
@@ -24,7 +28,8 @@ const sounds = {
 const ui = {
     screens: {
         login: document.getElementById('login-screen'),
-        start: document.getElementById('start-screen'),
+        levelSelect: document.getElementById('level-select-screen'), // New
+        start: document.getElementById('start-screen'), // Will be replaced by Level Select
         play: document.getElementById('play-screen'),
         chapterComplete: document.getElementById('chapter-complete-screen'),
         gameComplete: document.getElementById('game-complete-screen')
@@ -76,11 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Start Game Event
-    document.getElementById('btn-start-game').addEventListener('click', () => {
-        playSound('start');
-        startGame();
-    });
+    // Start Game Event (From Level Select)
+    // No longer using #btn-start-game for global start, logic moved to level selection
 
     // Reset Event
     document.getElementById('btn-reset').addEventListener('click', () => {
@@ -106,10 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
         startNextChapter();
     });
 
+    // Back to Level Select
+    document.getElementById('btn-back-menu').addEventListener('click', () => {
+        playSound('on');
+        showLevelSelect();
+    });
+
     document.getElementById('btn-restart').addEventListener('click', () => {
         resetGameSession();
         playSound('start');
-        showScreen('start');
+        showLevelSelect();
     });
 });
 
@@ -119,13 +127,10 @@ function loginUser(username) {
     gameState.username = username;
     loadProgress(username);
     updateHeaderUI();
-    showScreen('start');
+    showLevelSelect(); // Navigate to Level Select instead of Start Screen
 
-    // Welcome message
-    const welcomeMsg = document.getElementById('welcome-message');
-    if (welcomeMsg) {
-        welcomeMsg.textContent = `Ahlan, ${username}! Siap melanjutkan petualangan?`;
-    }
+    // Attempt cloud sync on login (fire & forget)
+    syncProgressToCloud();
 }
 
 function logoutUser() {
@@ -144,10 +149,14 @@ function saveProgress() {
     allUsers[gameState.username] = {
         xp: gameState.xp,
         level: gameState.level,
-        completedChapters: gameState.completedChapters
+        completedChapters: gameState.completedChapters,
+        totalScore: gameState.totalScore // Save score
     };
 
     localStorage.setItem('arabGameUsers', JSON.stringify(allUsers));
+
+    // Sync to Google Sheet
+    syncProgressToCloud();
 }
 
 function loadProgress(username) {
@@ -158,11 +167,13 @@ function loadProgress(username) {
         gameState.xp = userData.xp || 0;
         gameState.level = userData.level || 1;
         gameState.completedChapters = userData.completedChapters || [];
+        gameState.totalScore = userData.totalScore || 0;
     } else {
         // New user defaults
         gameState.xp = 0;
         gameState.level = 1;
         gameState.completedChapters = [];
+        gameState.totalScore = 0;
     }
 }
 
@@ -172,9 +183,36 @@ function resetProgress() {
     gameState.xp = 0;
     gameState.level = 1;
     gameState.completedChapters = [];
+    gameState.totalScore = 0;
     saveProgress();
     updateHeaderUI();
+    showLevelSelect(); // Refresh UI
     alert("Progress berhasil direset.");
+}
+
+async function syncProgressToCloud() {
+    if (!gameState.username || !GOOGLE_SCRIPT_URL.includes("script.google.com")) return;
+
+    const payload = {
+        username: gameState.username,
+        level: gameState.level,
+        xp: gameState.xp,
+        score: gameState.totalScore
+    };
+
+    try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', // Use no-cors for Google Script Web App unless properly configured with CORS
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        console.log("Synced to cloud successfully");
+    } catch (e) {
+        console.error("Cloud sync failed:", e);
+    }
 }
 
 // --- Navigation & Flow ---
@@ -195,18 +233,45 @@ function showScreen(screenId) {
     }
 }
 
-function startGame() {
-    // Find first incomplete chapter
-    let targetIdx = 0;
-    const firstIncomplete = CHAPTERS.findIndex(c => !gameState.completedChapters.includes(c.id));
+function showLevelSelect() {
+    updateHeaderUI();
 
-    if (firstIncomplete !== -1) {
-        targetIdx = firstIncomplete;
-    } else {
-        targetIdx = 0; // Replay if all done
-    }
+    // Generate Level Cards
+    const container = document.getElementById('level-grid');
+    if (!container) return; // Should exist in new HTML
 
-    startChapter(targetIdx);
+    container.innerHTML = '';
+
+    CHAPTERS.forEach((chapter, index) => {
+        const isLocked = index > 0 && !gameState.completedChapters.includes(CHAPTERS[index-1].id);
+        const isCompleted = gameState.completedChapters.includes(chapter.id);
+
+        const card = document.createElement('div');
+        card.className = `level-card ${isLocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}`;
+
+        // Card Content
+        let statusIcon = isLocked ? '🔒' : (isCompleted ? '✅' : '📖');
+
+        card.innerHTML = `
+            <div class="level-icon">${statusIcon}</div>
+            <div class="level-info">
+                <h3>${chapter.title}</h3>
+                <p>${chapter.description}</p>
+                ${isCompleted ? '<span class="badge-completed">Selesai</span>' : ''}
+            </div>
+        `;
+
+        if (!isLocked) {
+            card.addEventListener('click', () => {
+                playSound('start');
+                startChapter(index);
+            });
+        }
+
+        container.appendChild(card);
+    });
+
+    showScreen('levelSelect');
 }
 
 function startChapter(idx) {
@@ -365,7 +430,8 @@ function completeChapter() {
 }
 
 function startNextChapter() {
-    startChapter(gameState.currentChapterIndex + 1);
+    // Return to level select instead of auto-next
+    showLevelSelect();
 }
 
 function resetGameSession() {
@@ -377,6 +443,7 @@ function resetGameSession() {
 
 function addXP(amount) {
     gameState.xp += amount;
+    gameState.totalScore += amount; // Assuming score = total XP gained
 
     // Level up every 1000 XP
     const newLevel = Math.floor(gameState.xp / 1000) + 1;
@@ -390,7 +457,14 @@ function addXP(amount) {
 }
 
 function updateHeaderUI() {
-    if (ui.header.xpValue) ui.header.xpValue.textContent = gameState.xp;
+    // XP Display: Current / Next Level Target
+    const nextLevelXP = gameState.level * 1000;
+    const currentLevelProgress = gameState.xp % 1000;
+
+    if (ui.header.xpValue) {
+        ui.header.xpValue.textContent = `${gameState.xp} / ${nextLevelXP}`;
+    }
+
     if (ui.header.levelValue) ui.header.levelValue.textContent = gameState.level;
 
     if (gameState.username) {

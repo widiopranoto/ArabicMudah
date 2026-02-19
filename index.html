@@ -22,7 +22,7 @@
                 <span id="player-info" class="player-tag">Pemain</span>
             </div>
             <div class="header-center">
-                <span id="chapter-title">Bab 1: Nahwu & Shorof</span>
+                <span id="chapter-title">Menu Utama</span>
                 <div class="progress-bar-container">
                     <div id="progress-bar" class="progress-bar"></div>
                 </div>
@@ -48,22 +48,31 @@
                 </div>
             </div>
 
-            <!-- Start Screen -->
-            <div id="start-screen" class="screen hidden">
+            <!-- Level Select Screen (New) -->
+            <div id="level-select-screen" class="screen hidden">
                 <div class="hero-content">
-                    <h1 class="game-title">Petualangan Bahasa Arab</h1>
-                    <p id="welcome-message" class="subtitle">Belajar Nahwu & Shorof dengan Cara Baru!</p>
+                    <h1 class="game-title">Pilih Petualangan</h1>
+                    <p id="welcome-message" class="subtitle">Pilih bab yang ingin kamu pelajari.</p>
 
-                    <div class="menu-buttons">
-                        <button id="btn-start-game" class="btn-primary big">Mulai Petualangan</button>
-                        <button id="btn-reset" class="btn-secondary">Reset Progress</button>
+                    <div id="level-grid" class="level-grid">
+                        <!-- Level Cards injected by JS -->
+                    </div>
+
+                    <div class="menu-footer">
+                        <button id="btn-reset" class="btn-secondary small">Reset Progress</button>
                         <button id="btn-logout" class="btn-text">Ganti Pemain</button>
                     </div>
                 </div>
             </div>
 
+            <!-- Start Screen (Deprecated/Hidden, kept for compatibility if needed) -->
+            <div id="start-screen" class="screen hidden"></div>
+
             <!-- Play Screen -->
             <div id="play-screen" class="screen hidden">
+                <div class="play-header">
+                    <button id="btn-back-menu" class="btn-icon" title="Kembali ke Menu">🏠 Menu</button>
+                </div>
 
                 <div id="scene-display" class="scene-card">
                     <div id="arabic-text" class="arabic-content">
@@ -101,7 +110,7 @@
                     <h2>Luar Biasa! 🏆</h2>
                     <p>Kamu telah menamatkan semua bab (1-6).</p>
                     <p>Teruslah berlatih dan membaca Al-Quran.</p>
-                    <button id="btn-restart" class="btn-primary">Main Lagi</button>
+                    <button id="btn-restart" class="btn-primary">Kembali ke Menu</button>
                 </div>
             </div>
 
