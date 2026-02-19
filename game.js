@@ -12,7 +12,7 @@ let gameState = {
 };
 
 // Cloud Configuration
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUZtc0eT5iAzUfA-Bs7rSM0Z782xC_F1MVYur-wmoyjXZDtwmy4Bmrdbi2Xn1QwdAOhw/exec"; // Placeholder
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz_XXXXXXXXXXXX/exec"; // Placeholder
 
 // Audio Elements
 const sounds = {
@@ -68,57 +68,76 @@ document.addEventListener('DOMContentLoaded', () => {
     showScreen('login');
 
     // Login Event
-    ui.login.form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = ui.login.input.value.trim();
-        if (name) {
-            try {
-                playSound('on');
-            } catch (err) {
-                console.warn("Audio play failed, continuing login...", err);
+    if (ui.login.form) {
+        ui.login.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = ui.login.input.value.trim();
+            if (name) {
+                try {
+                    playSound('on');
+                } catch (err) {
+                    console.warn("Audio play failed, continuing login...", err);
+                }
+                loginUser(name);
             }
-            loginUser(name);
-        }
-    });
+        });
+    }
 
     // Start Game Event (From Level Select)
     // No longer using #btn-start-game for global start, logic moved to level selection
 
     // Reset Event
-    document.getElementById('btn-reset').addEventListener('click', () => {
-        if(confirm("Hapus progress untuk user ini?")) {
-            resetProgress();
-        }
-    });
-    
+    const btnReset = document.getElementById('btn-reset');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if(confirm("Hapus progress untuk user ini?")) {
+                resetProgress();
+            }
+        });
+    }
+
     // Logout Event
-    document.getElementById('btn-logout').addEventListener('click', () => {
-        playSound('on');
-        logoutUser();
-    });
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            playSound('on');
+            logoutUser();
+        });
+    }
 
     // Navigation Events
-    ui.narrative.nextBtn.addEventListener('click', () => {
-        playSound('on');
-        nextScene();
-    });
+    if (ui.narrative.nextBtn) {
+        ui.narrative.nextBtn.addEventListener('click', () => {
+            playSound('on');
+            nextScene();
+        });
+    }
 
-    document.getElementById('btn-next-chapter').addEventListener('click', () => {
-        playSound('start');
-        startNextChapter();
-    });
-    
+    const btnNextChapter = document.getElementById('btn-next-chapter');
+    if (btnNextChapter) {
+        btnNextChapter.addEventListener('click', () => {
+            playSound('start');
+            startNextChapter();
+        });
+    }
+
     // Back to Level Select
-    document.getElementById('btn-back-menu').addEventListener('click', () => {
-        playSound('on');
-        showLevelSelect();
-    });
+    const btnBackMenu = document.getElementById('btn-back-menu');
+    if (btnBackMenu) {
+        btnBackMenu.addEventListener('click', () => {
+            playSound('on');
+            showLevelSelect();
+        });
+    }
 
-    document.getElementById('btn-restart').addEventListener('click', () => {
-        resetGameSession();
-        playSound('start');
-        showLevelSelect();
-    });
+    const btnRestart = document.getElementById('btn-restart');
+    if (btnRestart) {
+        btnRestart.addEventListener('click', () => {
+            resetGameSession();
+            playSound('start');
+            showLevelSelect();
+        });
+    }
 });
 
 // --- User Management ---
@@ -128,14 +147,14 @@ function loginUser(username) {
     loadProgress(username);
     updateHeaderUI();
     showLevelSelect(); // Navigate to Level Select instead of Start Screen
-    
+
     // Attempt cloud sync on login (fire & forget)
     syncProgressToCloud();
 }
 
 function logoutUser() {
     gameState.username = "";
-    ui.login.input.value = "";
+    if (ui.login.input) ui.login.input.value = "";
     showScreen('login');
 }
 
@@ -144,7 +163,7 @@ function saveProgress() {
 
     // Load all users
     let allUsers = JSON.parse(localStorage.getItem('arabGameUsers') || '{}');
-    
+
     // Update current user
     allUsers[gameState.username] = {
         xp: gameState.xp,
@@ -152,9 +171,9 @@ function saveProgress() {
         completedChapters: gameState.completedChapters,
         totalScore: gameState.totalScore // Save score
     };
-    
+
     localStorage.setItem('arabGameUsers', JSON.stringify(allUsers));
-    
+
     // Sync to Google Sheet
     syncProgressToCloud();
 }
@@ -179,7 +198,7 @@ function loadProgress(username) {
 
 function resetProgress() {
     if (!gameState.username) return;
-    
+
     gameState.xp = 0;
     gameState.level = 1;
     gameState.completedChapters = [];
@@ -235,23 +254,23 @@ function showScreen(screenId) {
 
 function showLevelSelect() {
     updateHeaderUI();
-    
+
     // Generate Level Cards
     const container = document.getElementById('level-grid');
     if (!container) return; // Should exist in new HTML
-    
+
     container.innerHTML = '';
-    
+
     CHAPTERS.forEach((chapter, index) => {
         const isLocked = index > 0 && !gameState.completedChapters.includes(CHAPTERS[index-1].id);
         const isCompleted = gameState.completedChapters.includes(chapter.id);
-        
+
         const card = document.createElement('div');
         card.className = `level-card ${isLocked ? 'locked' : ''} ${isCompleted ? 'completed' : ''}`;
-        
+
         // Card Content
         let statusIcon = isLocked ? '🔒' : (isCompleted ? '✅' : '📖');
-        
+
         card.innerHTML = `
             <div class="level-icon">${statusIcon}</div>
             <div class="level-info">
@@ -260,17 +279,17 @@ function showLevelSelect() {
                 ${isCompleted ? '<span class="badge-completed">Selesai</span>' : ''}
             </div>
         `;
-        
+
         if (!isLocked) {
             card.addEventListener('click', () => {
                 playSound('start');
                 startChapter(index);
             });
         }
-        
+
         container.appendChild(card);
     });
-    
+
     showScreen('levelSelect');
 }
 
@@ -283,7 +302,7 @@ function startChapter(idx) {
 
     gameState.currentChapterIndex = idx;
     gameState.currentSceneIndex = 0;
-    
+
     updateHeaderUI();
     showScreen('play');
     renderScene();
@@ -292,51 +311,53 @@ function startChapter(idx) {
 function renderScene() {
     const chapter = CHAPTERS[gameState.currentChapterIndex];
     const scene = chapter.scenes[gameState.currentSceneIndex];
-    
+
     // Update Progress
     const progress = ((gameState.currentSceneIndex) / chapter.scenes.length) * 100;
-    ui.header.progressBar.style.width = `${progress}%`;
+    if (ui.header.progressBar) ui.header.progressBar.style.width = `${progress}%`;
 
     // 1. Render Narrative
-    ui.narrative.text.textContent = scene.text;
-    ui.narrative.speaker.textContent = scene.speaker || "Narator";
-    
+    if (ui.narrative.text) ui.narrative.text.textContent = scene.text;
+    if (ui.narrative.speaker) ui.narrative.speaker.textContent = scene.speaker || "Narator";
+
     // 2. Render Arabic Text (Visuals)
-    ui.scene.arabicText.innerHTML = '';
-    ui.narrative.choicesContainer.innerHTML = '';
-    ui.narrative.choicesContainer.classList.add('hidden');
-    
-    if (scene.arabic) {
+    if (ui.scene.arabicText) ui.scene.arabicText.innerHTML = '';
+    if (ui.narrative.choicesContainer) {
+        ui.narrative.choicesContainer.innerHTML = '';
+        ui.narrative.choicesContainer.classList.add('hidden');
+    }
+
+    if (scene.arabic && ui.scene.arabicText) {
         const words = scene.arabic.split(' ');
         words.forEach((word, index) => {
             const span = document.createElement('span');
             span.textContent = word + ' ';
             span.classList.add('arabic-word');
-            span.dataset.word = word.trim(); 
-            
+            span.dataset.word = word.trim();
+
             if (scene.interaction === 'click-word') {
                 span.classList.add('clickable');
                 span.addEventListener('click', () => handleWordClick(word.trim(), span, scene));
             }
-            
+
             ui.scene.arabicText.appendChild(span);
         });
     }
 
     // 3. Handle Interaction State
     gameState.waitingForInteraction = false;
-    ui.narrative.nextBtn.classList.remove('hidden'); 
+    if (ui.narrative.nextBtn) ui.narrative.nextBtn.classList.remove('hidden');
 
     if (scene.interaction) {
         gameState.waitingForInteraction = true;
-        ui.narrative.nextBtn.classList.add('hidden');
-        
+        if (ui.narrative.nextBtn) ui.narrative.nextBtn.classList.add('hidden');
+
         if (scene.interaction === 'choice') {
             renderChoices(scene);
         }
     }
-    
-    if (!scene.interaction) {
+
+    if (!scene.interaction && ui.narrative.nextBtn) {
         ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === chapter.scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
     }
 }
@@ -361,15 +382,15 @@ function handleWordClick(word, element, scene) {
 }
 
 function renderChoices(scene) {
-    ui.narrative.choicesContainer.classList.remove('hidden');
-    
+    if (ui.narrative.choicesContainer) ui.narrative.choicesContainer.classList.remove('hidden');
+
     scene.choices.forEach(choiceText => {
         const btn = document.createElement('button');
         btn.textContent = choiceText;
         btn.classList.add('choice-btn');
         btn.addEventListener('click', () => {
             if (!gameState.waitingForInteraction) return;
-            
+
             if (choiceText === scene.correctChoice) {
                 btn.style.backgroundColor = '#55efc4';
                 btn.style.color = '#fff';
@@ -381,31 +402,33 @@ function renderChoices(scene) {
                 try { playSound('alert'); } catch (e) { console.warn(e); }
             }
         });
-        ui.narrative.choicesContainer.appendChild(btn);
+        if (ui.narrative.choicesContainer) ui.narrative.choicesContainer.appendChild(btn);
     });
 }
 
 function finishInteraction(feedbackText) {
     gameState.waitingForInteraction = false;
-    
-    if (feedbackText) {
+
+    if (feedbackText && ui.narrative.text) {
         ui.narrative.text.textContent = feedbackText;
-        ui.narrative.speaker.textContent = "Ustadz";
+        if (ui.narrative.speaker) ui.narrative.speaker.textContent = "Ustadz";
     }
 
-    ui.narrative.nextBtn.classList.remove('hidden');
-    ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === CHAPTERS[gameState.currentChapterIndex].scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
-    
+    if (ui.narrative.nextBtn) {
+        ui.narrative.nextBtn.classList.remove('hidden');
+        ui.narrative.nextBtn.textContent = (gameState.currentSceneIndex === CHAPTERS[gameState.currentChapterIndex].scenes.length - 1) ? "Selesai Bab Ini" : "Lanjut";
+    }
+
     const words = document.querySelectorAll('.arabic-word');
     words.forEach(w => w.classList.remove('clickable'));
-    
+
     const choiceBtns = document.querySelectorAll('.choice-btn');
     choiceBtns.forEach(b => b.disabled = true);
 }
 
 function nextScene() {
     const chapter = CHAPTERS[gameState.currentChapterIndex];
-    
+
     if (gameState.currentSceneIndex < chapter.scenes.length - 1) {
         gameState.currentSceneIndex++;
         renderScene();
@@ -416,15 +439,16 @@ function nextScene() {
 
 function completeChapter() {
     const chapter = CHAPTERS[gameState.currentChapterIndex];
-    
+
     if (!gameState.completedChapters.includes(chapter.id)) {
         gameState.completedChapters.push(chapter.id);
         addXP(chapter.xpReward);
     }
-    
+
     saveProgress();
-    
-    document.getElementById('chapter-xp').textContent = chapter.xpReward;
+
+    const xpSpan = document.getElementById('chapter-xp');
+    if (xpSpan) xpSpan.textContent = chapter.xpReward;
     showScreen('chapterComplete');
     playSound('end');
 }
@@ -444,7 +468,7 @@ function resetGameSession() {
 function addXP(amount) {
     gameState.xp += amount;
     gameState.totalScore += amount; // Assuming score = total XP gained
-    
+
     // Level up every 1000 XP
     const newLevel = Math.floor(gameState.xp / 1000) + 1;
     if (newLevel > gameState.level) {
@@ -452,7 +476,7 @@ function addXP(amount) {
         alert(`Selamat! Kamu naik ke Level ${newLevel}!`);
         playSound('chime');
     }
-    
+
     updateHeaderUI();
 }
 
@@ -460,13 +484,13 @@ function updateHeaderUI() {
     // XP Display: Current / Next Level Target
     const nextLevelXP = gameState.level * 1000;
     const currentLevelProgress = gameState.xp % 1000;
-    
+
     if (ui.header.xpValue) {
         ui.header.xpValue.textContent = `${gameState.xp} / ${nextLevelXP}`;
     }
-    
+
     if (ui.header.levelValue) ui.header.levelValue.textContent = gameState.level;
-    
+
     if (gameState.username) {
         ui.header.playerInfo.textContent = `${gameState.username} (Lvl ${gameState.level})`;
     }
